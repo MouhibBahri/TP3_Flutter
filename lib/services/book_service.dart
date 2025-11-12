@@ -6,41 +6,38 @@ class BookService {
 
   Future<void> insertBook(Book book) async {
     final db = await _dbHelper.database;
-    await db.transaction((txn) async {
-      await txn.rawInsert(
-        "INSERT INTO book(name, price, image) VALUES('${book.name}',${book.price},'${book.image}' )",
-      );
+
+    await db.insert('book', {
+      'name': book.name,
+      'price': book.price,
+      'image': book.image,
     });
-    await db.close();
+
+    print("Inserted: ${book.name}");
   }
 
   Future<List<Book>> fetchBasketBooks() async {
-    List<Book> books = [];
-    var db = await _dbHelper.database;
+    final db = await _dbHelper.database;
 
-    await db.transaction((txn) async {
-      List<Map> list = await txn.rawQuery("SELECT * FROM book");
+    final List<Map<String, dynamic>> maps = await db.query('book');
 
-      for (var element in list) {
-        books.add(
-          Book(
-            element["name"] as String,
-            element["price"] as int,
-            element["image"].toString(),
-          ),
-        );
-      }
+    return List.generate(maps.length, (i) {
+      return Book(
+        maps[i]['name'] as String,
+        maps[i]['price'] as int,
+        maps[i]['image'] as String,
+      );
     });
-
-    await db.close();
-    return books;
   }
 
   Future<void> clearBooks() async {
-    var db = await _dbHelper.database;
-    await db.transaction((txn) async {
-      await txn.rawDelete("DELETE FROM book");
-    });
-    await db.close();
+    final db = await _dbHelper.database;
+    await db.delete('book');
+    print("All books cleared");
+  }
+
+  Future<void> deleteBook(String name) async {
+    final db = await _dbHelper.database;
+    await db.delete('book', where: 'name = ?', whereArgs: [name]);
   }
 }
